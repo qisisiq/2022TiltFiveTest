@@ -2,10 +2,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using TiltFive;
+using Input = TiltFive.Input;
 
 //This script requires you to have setup your animator with 3 parameters, "InputMagnitude", "InputX", "InputZ"
 //With a blend tree to control the inputmagnitude and allow blending between animations.
+
+// Using jump code from: https://docs.unity3d.com/ScriptReference/CharacterController.Move.html
+
 [RequireComponent(typeof(CharacterController))]
 public class MovementInput : MonoBehaviour {
 
@@ -14,6 +17,8 @@ public class MovementInput : MonoBehaviour {
 
 	public float InputX;
 	public float InputZ;
+	public float InputY;
+
 	public Vector3 desiredMoveDirection;
 	public bool blockRotationPlayer;
 	public float desiredRotationSpeed = 0.1f;
@@ -23,6 +28,10 @@ public class MovementInput : MonoBehaviour {
 	public Camera cam;
 	public CharacterController controller;
 	public bool isGrounded;
+	public float jumpHeight = 2.0f;
+	private float gravityValue = -9.81f;
+	private bool canJump;
+
 
     [Header("Animation Smoothing")]
     [Range(0, 1f)]
@@ -46,22 +55,32 @@ public class MovementInput : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
+		// Moves the character on the X and Z planes
 		InputMagnitude ();
+		
+		InputY = TiltFive.Input.GetTrigger();
 
+		// Falling if we're not on the ground
         isGrounded = controller.isGrounded;
-        if (isGrounded)
+        if (isGrounded && verticalVel <= 0)
         {
-            verticalVel -= 0;
+            verticalVel = 0f;
         }
         else
         {
-            verticalVel -= 1;
+            //verticalVel -= 1;
         }
+
+        if (InputY > 0 && isGrounded)
+        {
+	        verticalVel += Mathf.Sqrt(jumpHeight * -3.0f * gravityValue * InputY);
+        }
+        
+        verticalVel += gravityValue * Time.deltaTime;
         moveVector = new Vector3(0, verticalVel * .2f * Time.deltaTime, 0);
         controller.Move(moveVector);
 
-
-    }
+	}
 
     void PlayerMoveAndRotation() {
 		InputX = TiltFive.Input.GetStickTilt().x;
